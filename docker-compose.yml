@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:4.2.12
+    container_name: study-mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: study
+      MONGO_INITDB_ROOT_PASSWORD: study
+      MONGO_INITDB_DATABASE: study-database
+    volumes:
+      - ./mongo-entrypoint:/docker-entrypoint-initdb.d
