@@ -8,8 +8,8 @@ services:
     ports:
       - 27017:27017
     environment:
-      MONGO_INITDB_ROOT_USERNAME: study
-      MONGO_INITDB_ROOT_PASSWORD: study
+      MONGO_INITDB_ROOT_USERNAME: study-user
+      MONGO_INITDB_ROOT_PASSWORD: study-pw
       MONGO_INITDB_DATABASE: study
     volumes:
       - ./mongo-entrypoint:/docker-entrypoint-initdb.d
