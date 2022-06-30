@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 
-internal class Chapter2 : StringSpec({
+internal class Chapter2o1 : StringSpec({
     class Person(
         val first: String,
         val middle: String?,
