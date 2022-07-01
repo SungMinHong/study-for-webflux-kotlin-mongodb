@@ -1,4 +1,4 @@
-package cases
+package chapter
 
 import io.kotest.core.spec.style.StringSpec
 

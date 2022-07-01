@@ -1,6 +1,6 @@
-package chapter2o3;
+package chapter.chapter2o3;
 
-import cases.chapter2o3.OverloadKt;
+import chapter.chapter2o3.OverloadKt;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
