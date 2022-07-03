@@ -1,4 +1,4 @@
-package chapter
+package chapter2
 
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.maps.shouldContainValue

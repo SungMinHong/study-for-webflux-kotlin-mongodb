@@ -1,10 +1,9 @@
-package chapter
+package chapter2
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeInRange
 import io.kotest.matchers.ints.shouldNotBeInRange
 import io.kotest.matchers.shouldBe
-import kotlin.math.pow
 
 
 internal class Chapter2o7 : StringSpec({

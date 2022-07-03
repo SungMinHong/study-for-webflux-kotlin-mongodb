@@ -1,6 +1,6 @@
-package chapter.chapter2o3
+package chapter2.chapter2o3
 
-import chapter.chapter2o3.OverloadKt.addProduct
+import chapter2.chapter2o3.OverloadKt.addProduct
 import io.kotest.core.spec.style.AnnotationSpec
 import org.junit.jupiter.api.assertAll
 

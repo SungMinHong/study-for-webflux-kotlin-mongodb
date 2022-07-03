@@ -1,4 +1,4 @@
-package chapter.chapter2o3
+package chapter2.chapter2o3
 
 import java.text.NumberFormat
 
