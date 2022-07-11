@@ -29,7 +29,7 @@ class FluxMonoSimpleTest {
 
     @DisplayName("subscribe method 예시")
     @Nested
-    class subscribeMethodExample {
+    class SubscribeMethodExample {
         @Test
         void 구독자_테스트() {
             Flux<Integer> ints = Flux.range(1, 3); // 구독자가 생기면 값 3개를 생성하는 Flux를 세팅한다
@@ -62,4 +62,17 @@ class FluxMonoSimpleTest {
         }
     }
 
+    @DisplayName("BaseSubscriber 예시")
+    @Nested
+    class BaseSubscriberExample {
+        @Test
+        void SampleSubscriber_생성() {
+            var sampleSubscriber = new SampleSubscriber<Integer>();
+            var ints = Flux.range(1, 4);
+            ints.subscribe(System.out::println,
+                    error -> System.err.println("Error " + error),
+                    () -> System.out.println("Done"));
+            ints.subscribe(sampleSubscriber);
+        }
+    }
 }
