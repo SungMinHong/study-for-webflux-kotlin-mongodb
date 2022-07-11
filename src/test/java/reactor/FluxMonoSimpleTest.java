@@ -1,8 +1,11 @@
 package reactor;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -73,6 +76,36 @@ class FluxMonoSimpleTest {
                     error -> System.err.println("Error " + error),
                     () -> System.out.println("Done"));
             ints.subscribe(sampleSubscriber);
+        }
+    }
+
+    @DisplayName("Backpressure 예시")
+    @Nested
+    class BackpressureExample {
+        @Test
+        void BaseSubscriber의_hookOnSubscribe_재정의_해서_subscribe() {
+            Flux.range(1, 16)
+                    .subscribe(new BaseSubscriber<>() {
+                        final int requestCount = 5; // 5개씩 요청
+                        int count = 0;
+
+                        @Override
+                        public void hookOnSubscribe(@NotNull Subscription subscription) {
+                            System.out.printf("%d회 가져오기: ", count / 5 + 1);
+                            request(requestCount);
+                        }
+
+                        @Override
+                        public void hookOnNext(@NotNull Integer integer) {
+                            System.out.print(" " + integer);
+                            count++;
+                            // 5개 이상 처리가 된 경우 또 5개 요청하기
+                            if (count % requestCount == 0) {
+                                request(requestCount);
+                                System.out.printf("\n%d회 가져오기: ", count / 5 + 1);
+                            }
+                        }
+                    });
         }
     }
 }
