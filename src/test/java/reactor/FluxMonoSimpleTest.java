@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
@@ -11,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 class FluxMonoSimpleTest {
     @Test
@@ -108,4 +110,87 @@ class FluxMonoSimpleTest {
                     });
         }
     }
+
+    @DisplayName("Error Handling 예시")
+    @Nested
+    class ErrorHandlingExample {
+        public String doSomethingDangerous(final int value) {
+            if (value > 3) {
+                throw new IllegalArgumentException("3보다 크면 노노!");
+            }
+            return value + "";
+        }
+
+        public String doSecondTransform(final String value) {
+            return value + "!";
+        }
+
+        @Test
+        void 기본_예제() {
+            Flux<String> s = Flux.range(1, 10)
+                    .map(this::doSomethingDangerous) // 예외를 발생시킬 수 있는 변환을 시도한다.
+                    .map(this::doSecondTransform); // 문제없이 실행됐다면 두 번쨰 변환을 시도한다.
+            s.subscribe(value -> System.out.println("RECEIVED " + value), // 변환한 값들을 각각 출력한다.
+                    error -> System.err.println("CAUGHT " + error) // 에러가 발생했다면 시퀀스를 종료하고 에러 메시지를 출력한다.
+            );
+        }
+
+        @Test
+        void static_fallback_value() {
+            Flux.just(1, 2, 4, 3)
+                    .map(this::doSomethingDangerous)
+                    .onErrorReturn("RECOVERED") // 에러가 발생했다면 시퀀스를 종료하고 에러 메시지를 출력한다.
+                    .subscribe(System.out::println);
+        }
+
+        @Test
+        void static_fallback_value_with_predicate() {
+            Flux.just(1, 2, 4, 3)
+                    .map(this::doSomethingDangerous)
+                    .onErrorReturn(e -> e.getMessage().equals("3보다 크면 노노!"), "RECOVERED") // 에러가 발생했다면 시퀀스를 종료하고 에러 메시지를 출력한다.
+                    .subscribe(System.out::println);
+        }
+
+        @Test
+        void static_fallback_value_with_two_onErrorReturn() {
+            Flux.just(1, 2, 4, 3)
+                    .map(this::doSomethingDangerous)
+                    .onErrorReturn(e -> e.getMessage().equals("3보다 크면 노노!"), "RECOVERED1")
+                    .onErrorReturn("RECOVERED2") // 처음 선언한 onErrorReturn이 먼저 실행됨. 만약 위 조건에 해당하지 않는다면 RECOVERED2 반환 됨
+                    .subscribe(System.out::println);
+        }
+
+
+        private Flux<String> getFromCache(String k) {
+            return Flux.just("[cache] key: " + k, k, k, k);
+        }
+
+        private Flux<String> callExternalService(String k) {
+            if (k.equals("key2")) {
+                throw new IllegalArgumentException("외부 호출 실패!");
+            }
+            return Flux.just("[external] key: " + k, k, k, k);
+        }
+
+        @Test
+        void onErrorResume() {
+            Flux.just("key1", "key2", "key3")
+                    .flatMap(k -> callExternalService(k)
+                            .onErrorResume(e -> getFromCache(k)))   //TODO:: 왜 동작 안하지..? 원인 알아보기
+                    .onErrorResume(IllegalArgumentException.class, e -> getFromCache("resume key")) // key3은 실행 안됨
+                    .subscribe(System.out::println);
+        }
+
+        @Test
+        void catchAndRethrow() {
+            Flux.just("key1", "key2")
+                    .flatMap(this::callExternalService)
+                    .onErrorMap(original -> new RuntimeException("oops, SLA exceeded", original))
+                    .subscribe(System.out::println);
+        }
+
+        // TODO:: 로깅 부터 다시
+    }
+
+
 }
