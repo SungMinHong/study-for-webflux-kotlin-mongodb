@@ -4,15 +4,17 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class FluxMonoSimpleTest {
     @Test
@@ -188,9 +190,108 @@ class FluxMonoSimpleTest {
                     .onErrorMap(original -> new RuntimeException("oops, SLA exceeded", original))
                     .subscribe(System.out::println);
         }
-
-        // TODO:: 로깅 부터 다시
     }
 
+    @DisplayName("log or react on the side 예시")
+    @Nested
+    class LoggingExample {
+        /**
+         * 에러를 계속 전파하면서 시퀀스를 수정하지 않는 다른 일을 하고 싶다면 doOnError 연산자를 사용하세요.
+         */
+
+        private Flux<String> callExternalService(String k) {
+            if (k.equals("key2")) {
+                throw new IllegalArgumentException("외부 호출 실패!");
+            }
+            return Flux.just("[external] key: " + k, k, k, k);
+        }
+
+        @Test
+        void doOnError_test() {
+            Flux<String> flux =
+                    Flux.just("key1", "key2")
+                            .flatMap(k -> callExternalService(k)
+                                    .doOnError(e -> {   //TODO:: 왜 동작 안하지..? 원인 알아보기
+                                        System.out.println("uh oh, falling back, service failed for key " + k); // 로깅
+                                    })
+                            );
+            flux.subscribe(System.out::println);
+        }
+    }
+
+
+    public static class SomeAutoCloseable implements Closeable {
+        @Override
+        public void close() throws IOException {
+            System.out.println("close 했다!");
+        }
+
+        @Override
+        public String toString() {
+            return "사용했다!";
+        }
+    }
+
+    @DisplayName("using resources and the finally block 예시")
+    @Nested
+    class FinallyBlockExample {
+        /**
+         * 에러를 계속 전파하면서 시퀀스를 수정하지 않는 다른 일을 하고 싶다면 doOnError 연산자를 사용하세요.
+         */
+
+        private Flux<String> callExternalService(String k) {
+            if (k.equals("key2")) {
+                throw new IllegalArgumentException("외부 호출 실패!");
+            }
+            return Flux.just("[external] key: " + k, k, k, k);
+        }
+
+        @Test
+        void try_with_resource_test() {
+            try (SomeAutoCloseable disposableInstance = new SomeAutoCloseable()) {
+                System.out.println(disposableInstance);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+        @Test
+        void doFinally_test() {
+            Flux<String> flux =
+                    Flux.just("foo", "bar", "boo")
+                            .doOnSubscribe(s -> System.out.println("doOnSubscribe!"))
+                            .doFinally(type -> System.out.println("doFinally!"))
+                            .take(2);
+            flux.subscribe(System.out::println);
+        }
+
+        @Test
+        void resourceCleanup_test() {
+            AtomicBoolean isDisposed = new AtomicBoolean();
+            Disposable disposableInstance = new Disposable() {
+                @Override
+                public void dispose() {
+                    System.out.println("딱 한번만 dispose 실행됨");
+                    isDisposed.set(true);
+                }
+
+                @Override
+                public String toString() {
+                    return "DISPOSABLE";
+                }
+            };
+            Flux<String> flux =
+                    Flux.using(
+                            () -> disposableInstance, // 리소스를 생성한다.
+                            disposable -> Flux.just(disposable.toString()), // Flux<String>를 리턴한다
+                            Disposable::dispose // Flux가 종료되거나 취소됐을 때 호출한다.
+                    );
+            System.out.println("실행 전: " + isDisposed);
+            flux.subscribe();
+            System.out.println("실행 후: " + isDisposed);
+        }
+
+    }
 
 }
