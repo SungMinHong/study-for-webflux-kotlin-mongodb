@@ -169,7 +169,7 @@ class FluxMonoSimpleTest {
 
         private Flux<String> callExternalService(String k) {
             if (k.equals("key2")) {
-                throw new IllegalArgumentException("외부 호출 실패!");
+                return Flux.error(new IllegalArgumentException("외부 호출 실패!"));
             }
             return Flux.just("[external] key: " + k, k, k, k);
         }
@@ -178,8 +178,8 @@ class FluxMonoSimpleTest {
         void onErrorResume() {
             Flux.just("key1", "key2", "key3")
                     .flatMap(k -> callExternalService(k)
-                            .onErrorResume(e -> getFromCache(k)))   //TODO:: 왜 동작 안하지..? 원인 알아보기
-                    .onErrorResume(IllegalArgumentException.class, e -> getFromCache("resume key")) // key3은 실행 안됨
+                            .onErrorResume(e -> getFromCache(k)))
+                    .onErrorResume(IllegalArgumentException.class, e -> getFromCache("resume key")) // key3도 실행됨
                     .subscribe(System.out::println);
         }
 
@@ -201,21 +201,19 @@ class FluxMonoSimpleTest {
 
         private Flux<String> callExternalService(String k) {
             if (k.equals("key2")) {
-                throw new IllegalArgumentException("외부 호출 실패!");
+                return Flux.error(new IllegalArgumentException("외부 호출 실패!"));
             }
             return Flux.just("[external] key: " + k, k, k, k);
         }
 
         @Test
         void doOnError_test() {
-            Flux<String> flux =
-                    Flux.just("key1", "key2")
-                            .flatMap(k -> callExternalService(k)
-                                    .doOnError(e -> {   //TODO:: 왜 동작 안하지..? 원인 알아보기
-                                        System.out.println("uh oh, falling back, service failed for key " + k); // 로깅
-                                    })
-                            );
-            flux.subscribe(System.out::println);
+            Flux.just("key1", "key2")
+                    .flatMap(k -> callExternalService(k)
+                            .doOnError(e -> {
+                                System.out.println("uh oh, falling back, service failed for key " + k); // 로깅
+                            })
+                    ).subscribe();
         }
     }
 
