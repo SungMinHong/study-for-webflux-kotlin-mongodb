@@ -289,7 +289,33 @@ class FluxMonoSimpleTest {
             flux.subscribe();
             System.out.println("실행 후: " + isDisposed);
         }
+    }
 
+    @Nested
+    class MapVsFlatMap {
+        @Test
+        void flatMap() {
+            System.out.println("flatMap 시작: " + Thread.currentThread().getName());
+            Mono<String> flux = Mono.just("foo")
+                    .flatMap(it -> {
+                        System.out.println(Thread.currentThread().getName());
+                        return Mono.just(it.toUpperCase());
+                    });
+            System.out.println("flatMap 종료: " + Thread.currentThread().getName());
+            flux.subscribe(System.out::println);
+        }
+
+        @Test
+        void map() {
+            System.out.println("map 시작: " + Thread.currentThread().getName());
+            Mono<String> map = Mono.just("foo")
+                    .map(it -> {
+                        System.out.println(Thread.currentThread().getName());
+                        return it.toUpperCase();
+                    });
+            System.out.println("map 종료: " + Thread.currentThread().getName());
+            map.subscribe(System.out::println);
+        }
     }
 
 }
