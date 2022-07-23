@@ -9,9 +9,11 @@ import reactor.core.Disposable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -282,12 +284,56 @@ class FluxMonoSimpleTest {
             Flux<String> flux =
                     Flux.using(
                             () -> disposableInstance, // 리소스를 생성한다.
-                            disposable -> Flux.just(disposable.toString()), // Flux<String>를 리턴한다
+                            disposable -> Flux.just(disposable.toString(), disposable.toString(), disposable.toString()), // Flux<String>를 리턴한다
                             Disposable::dispose // Flux가 종료되거나 취소됐을 때 호출한다.
                     );
             System.out.println("실행 전: " + isDisposed);
             flux.subscribe();
             System.out.println("실행 후: " + isDisposed);
         }
+    }
+
+    @Test
+    void flux_interval() throws InterruptedException {
+        Flux<String> flux = Flux.interval(Duration.ofMillis(250))
+                .map(input -> {
+                    if (input < 3) {
+                        return "tick " + input;
+                    }
+                    throw new RuntimeException("boom");
+                }).onErrorReturn("Uh oh");
+        flux.subscribe(System.out::println);
+        Thread.sleep(1100); // interval은 timer scheduler 에서 실행한다. 어플리케이션이 값을 생성하지 않은 채로 종료되지 않도록 sleep을 사용한다.
+    }
+
+    @Test
+    void retrying() throws InterruptedException {
+        Flux.interval(Duration.ofMillis(250))
+                .map(input -> {
+                    if (input < 3) return "tick " + input;
+                    throw new RuntimeException("boom");
+                })
+                .retry(3)
+                .elapsed() // 데이터와 이전 데이터를 방출한 이후 소요된 시간을 한군데 묶는다
+                .subscribe(System.out::println, error -> System.out.println("에러발생: " + error)); // onError 신호도 확인할 수 있다.
+        // 재시도 이후에도 실패했으니 에러가 반환되고 끝남.
+        Thread.sleep(2100);
+    }
+
+    /** 재시도 사이클은 다음처럼 진행된다.
+     * 1. 에러가 발생할 때마다 (재시도 가능성이 있는) 사용자 함수로 장식한 companion Flux로 RetrySignal이 전달된다.
+     *    이때 Flux로 지금까지의 모든 재시도 내역을 한눈에 볼 수있다. 이 RetrySignal로 발생한 에러와 메타 데이터에 접근할 수 있다.
+     * 2. companion Flux에서 값을 방출하면 재시도한다.
+     * 3. companion Flux가 완료되면, 에러는 삼켜지고 재시도 사이클은 중단되며, 그 결과 시퀀스도 완료된다.
+     * 4. companion Flux가 에러를 생산하면 (e), 재시도 사이클은 중단하고 결과 시퀀스는 e 에러로 끝난다.
+     */
+    @Test
+    void flux_retry_3times() {
+        Flux<String> flux = Flux
+                .<String>error(new IllegalArgumentException())  // 계속해서 에러를 생산해 재시도를 유도한다.
+                .doOnError(System.out::println) //재시도 전 doOnError에서 모든 에러를 로깅한다.
+                .retryWhen(Retry.from(companion ->  //Retry는 매우 간단한 Function 람다를 받는다.
+                        companion.take(3)));    //에러 세 번째까지는 재시도하고 이후는 그만두게 설정한다.
+        flux.subscribe();
     }
 }
