@@ -13,7 +13,6 @@ class EventClient {
         .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
-    // webClint 사용시 동일한 스레드에서 계속 처리됨
     fun getEvent(): Mono<EventSearchResponse> =
         myWebclient.get()
             .uri("/api/search/aside?query=이벤트")
