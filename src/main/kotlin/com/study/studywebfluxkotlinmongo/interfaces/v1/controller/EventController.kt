@@ -3,6 +3,7 @@ package com.study.studywebfluxkotlinmongo.interfaces.v1.controller
 import com.study.studywebfluxkotlinmongo.application.EventService
 import com.study.studywebfluxkotlinmongo.domain.Event
 import com.study.studywebfluxkotlinmongo.domain.EventRepository
+import kotlinx.coroutines.flow.Flow
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -20,9 +21,17 @@ class EventController(
     fun getAll(): Flux<Event> =
         eventService.getAll()
             .flatMap {
-                println("EventController -> EventService called ${Thread.currentThread().name}") // 몽고디비 조회 이후라면 다른 스레드에서 실행됨
+                println("[flatMap] EventController -> EventService called ${Thread.currentThread().name}")
                 Flux.just(it)
             }
+
+    @GetMapping("/using-coroutine")
+    suspend fun getAllUsingCoroutine(): Flow<Event> {
+        println("EventController -> EventService called ${Thread.currentThread().name}")
+        val result = eventService.getAllUsingCoroutine()
+        println("EventController -> EventService call completed ${Thread.currentThread().name}")
+        return result
+    }
 
 
     @PostMapping
