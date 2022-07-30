@@ -172,4 +172,14 @@ class Coroutine {
     fun run_dispatchersTest() {
         dispatchersTest()
     }
+
+    /**
+     * delay와 yield는 코루틴 안에서 특별한 의미를 지니는 함수들이다. 이런 함수를 일시중단(suspending)함수라고 부른다.
+     * 예제에서 살펴본 delay()와 yield() 외에 다음 함수들이 kolinx-coroutines-core 모듈의 최상위에 정의된 일시 중단 함수들이다.
+     * withContext: 다른 컨텍스트로 코루틴을 전환한다.
+     * withTimeout: 코루틴이 정해진 시간 안에 실행되지 않으면 예뢰를 발생시키게 한다.
+     * withTimeoutOrNull: 코루틴이 정해진 시간 안에 실행되지 않으면 null을 결과로 돌려준다.
+     * awaitAll: 모든 작업의 성공을 기다린다. 작업 중 어느 하나가 예외로 실패하면 awaitAll도 그 예외로 실패한다.
+     * joinAll: 모든 작업이 끝날 때까지 현재 작업을 일시 중단시킨다.
+     */
 }
