@@ -115,7 +115,7 @@ class Coroutine {
          * 비동기 코드가 늘어남에 따라 async/await을 사용한 비동기가 빛을 발한다. 실행하려는 작업이 시간이 얼마 걸리지 않거나 I/O에 의한 대기 시간이 크고,
          * CPU 코어 수가 작아 동시에 실행할 수 있는 스레드 개수가 한정된 경우에는 특히 코루틴과 일반 스레드를 사용한 비동기 처리 사이에 차이가 커진다.
          * +) Thread.sleep()은 스레드를 정지시켜 버리니 delay대신 사용한다면 총 6초가 걸리게 된다.
-        */
+         */
         runBlocking {
             val d1 = async {
                 delay(1000L)
@@ -148,5 +148,28 @@ class Coroutine {
             async가 반환하는 Deffered의 await을 사용해서 코루틴이 결과 값을 내놓을 때까지 기다렸다가 결과 값을 얻어낼 수 있다.
         """.trimIndent()
         sumAll()
+    }
+
+    fun dispatchersTest() {
+        // 같은 launch를 사용하더라도 전달하는 컨텍스트에 따라 서로 다른 스레드상에서 코루틴이 실행됨을 알 수 있다.
+        runBlocking {
+            launch {
+                log("main ruBlocking: I'm working in thread")
+            }
+            launch(Dispatchers.Unconfined) {// 특정 스레드에 종속되지 않음 ? 메인 스레드 사용
+                log("Unconfined: I'm working in thread")
+            }
+            launch(Dispatchers.Default) {
+                log("Default: I'm working in thread")
+            }
+            launch(newSingleThreadContext("MyOwnThread")) { // 새 스레드를 사용
+                log("newSingleThreadContext: I'm working in thread")
+            }
+        }
+    }
+
+    @Test
+    fun run_dispatchersTest() {
+        dispatchersTest()
     }
 }
