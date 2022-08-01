@@ -66,4 +66,21 @@ class EventService(
         println("service -> client called ${Thread.currentThread().name}")
         return  eventClient.getEvent().awaitSingle()
     }
+
+    /** 중간 결론
+     * - 몽고디비 호출 시
+     *     - mono
+     *         - map 스레드 변경됨(reactor-http-nio-x thread 사용 안함)
+     *         - flatMap 스레드 변경됨(reactor-http-nio-x thread 사용 안함)
+     *     - flux
+     *         - map 스레드 변경됨(reactor-http-nio-x thread 사용 안함)
+     *         - flatMap 스레드 변경됨(reactor-http-nio-x thread 사용 안함)
+     * - WebClient 호출 시
+     *     - mono
+     *         - map 스레드 변경 안됨(reactor-http-nio-x thread 사용하고 스레드 번호가 같았음)
+     *         - flatMap 스레드 변경 안됨(reactor-http-nio-x thread 사용하고 스레드 번호가 같았음)
+     *     - flux
+     *         - map 스레드 변경됨(reactor-http-nio-x thread 사용 하지만 스레드 번호가 다름)
+     *         - flatMap 스레드 변경됨(reactor-http-nio-x thread 사용 하지만 스레드 번호가 다름)
+     */
 }
