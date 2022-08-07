@@ -1,0 +1,8 @@
+spring:
+    data:
+      mongodb:
+        uri: mongodb://localhost:27017
+        username: study-user
+        password: study-pw
+        database: study
+        auto-index-creation: true
